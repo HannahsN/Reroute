@@ -1,0 +1,5 @@
+Reroute is an experimental learning system that uses biometric signals from wearable devices (such as Fitbit) to monitor stress and cognitive load during studying. By detecting physiological indicators like heart rate variability, sleep quality, and activity levels, the system identifies when a student may be entering states of productive focus, fatigue, or excessive stress.
+
+Instead of forcing students to follow a rigid study path, Reroute dynamically adjusts the learning experience. When stress or cognitive overload is detected, the system can recommend alternative strategies such as switching to worked examples, reviewing easier material, taking a break, or approaching the concept through a different format. When physiological indicators suggest a state of focus or “flow,” the system encourages continued deep work.
+
+The goal of Reroute is to transform learning systems from time-based tracking tools into physiology-aware adaptive environments that help students maintain productive struggle without crossing into harmful stress.
