@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Health Assistant Chatbot</title>
+    <style>
+        /* Main page layout */
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; padding: 20px; 
+            background-color: #eef6f9; 
+            display: flex; flex-direction: column; height: 95vh; 
+        }
+        .header { text-align: center; color: #4a7c8c; margin-bottom: 10px; } 
+        
+        .chat-container { 
+            background: #cfecfa; 
+            border-radius: 20px; 
+            padding: 20px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+            display: flex; flex-direction: column;
+            flex: 1; 
+            overflow: hidden; 
+            border: 1px solid #c3d4dd;
+        }
+
+        #chat-messages { 
+            flex: 1; 
+            overflow-y: auto; 
+            display: flex; flex-direction: column;
+            gap: 12px; padding: 10px;
+            background-color: #e0f1fa; border-radius: 10px;
+        }
+
+        /*Message Bubbles */
+        .message { padding: 12px 16px; border-radius: 18px; max-width: 70%; line-height: 1.5; word-wrap: break-word; }
+        .user-message { background-color: #cde4eb; color: #2c3e50; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .bot-message { background-color: #cde4eb; color: #2c3e50; align-self: flex-start; border: 1px solid #d2e2f3; border-bottom-left-radius: 4px; }
+
+        /* Animated Typing Indicator */
+        .typing-indicator { display: flex; align-items: center; gap: 5px; padding: 16px 20px; }
+        .dot { width: 8px; height: 8px; background-color: #6c9da9; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /*The Input Bar */
+        .input-area { display: flex; padding-top: 15px; border-top: 1px solid #f0f0f0; flex-shrink: 0; }
+        input[type="text"] { flex: 1; padding: 15px; border: 1px solid #d1dce0; border-radius: 25px; outline: none; }
+        button { padding: 0 25px; background-color: #6c9da9; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; margin-left: 10px; }
+        button:hover { background-color: #5a8793; }
+
+        /*Topics */
+        .health-topics { background-color: #f0f9f4; padding: 10px; border-radius: 15px; margin-top: 15px; flex-shrink: 0; }
+        .topic-tag { display: inline-block; background-color: #8bb8a3; color: white; padding: 5px 12px; border-radius: 20px; margin: 3px; font-size: 12px; cursor: pointer; transition: background 0.2s; }
+        .topic-tag:hover { background-color: #6c9da9; }
+        
+        .clear-btn { 
+            margin-top: 10px; align-self: center; background: none; border: none; 
+            color: #888; cursor: pointer; text-decoration: underline; font-size: 12px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="header"><h1>Health Assistant Chatbot</h1></div>
+    
+    <div class="chat-container">
+        <div id="chat-messages">
+            <div class="message bot-message">Hello! I am your AI health wellness coach. How are you feeling today?</div>
+        </div>
+        
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Ask a health question...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+        
+        <div class="health-topics">
+            <strong>Quick Topics:</strong>
+            <span class="topic-tag" onclick="quickAsk('nutrition')">Nutrition</span>
+            <span class="topic-tag" onclick="quickAsk('exercise')">Exercise</span>
+            <span class="topic-tag" onclick="quickAsk('sleep')">Sleep</span>
+        </div>
+        <button class="clear-btn" onclick="resetChat()">Reset Conversation</button>
+    </div>
+
+    <script>
+        // Notice: No API Key here! It's safely in your backend now.
+
+        // This is the memory, keeps track of the conversation
+        let chatHistory = [
+            { role: "system", content: "You are a friendly, all-knowing AI wellness coach. Answer questions about any topic, but try to relate health benefits to your answers. Keep responses short." }
+        ];
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const message = input.value.trim();
+            if (message === '') return;
+
+            // Show user message on screen
+            addMessage(message, 'user');
+            
+            // Add to memory
+            chatHistory.push({ role: "user", content: message });
+            
+            input.value = ''; 
+            
+            // Add animated typing indicator
+            const typingId = 'typing-indicator';
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.innerHTML += `
+                <div id="${typingId}" class="message bot-message typing-indicator">
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                </div>`;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Get response using history
+            const response = await generateAIResponse();
+            
+            // Remove typing indicator
+            document.getElementById(typingId).remove();
+            
+            // Show response and add to memory
+            addMessage(response, 'bot');
+            chatHistory.push({ role: "assistant", content: response });
+        }
+
+        async function generateAIResponse() {
+            // FIX: Changed localhost to 127.0.0.1 right here!
+            const endpoint = 'http://127.0.0.1:3000/api/chat'; 
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: chatHistory })
+                });
+                
+                if (!response.ok) throw new Error('Server Error');
+                
+                const data = await response.json();
+                return data.choices[0].message.content;
+            } catch (error) {
+                console.error(error);
+                return "Connection error. Make sure your 'node server.js' terminal is still running!"; 
+            }
+        }
+
+        function addMessage(message, sender) {
+            const chatMessages = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `message ${sender}-message`;
+            
+            // Basic formatting for bold text returned by AI
+            div.innerHTML = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function quickAsk(topic) {
+            document.getElementById('user-input').value = `Tell me about ${topic}`;
+            sendMessage();
+        }
+
+        function resetChat() {
+            chatHistory = [chatHistory[0]]; // Keep only the system prompt
+            document.getElementById('chat-messages').innerHTML = '<div class="message bot-message">How are you feeling now?</div>';
+        }
+
+        // Allow pressing Enter to send
+        document.getElementById('user-input').addEventListener('keypress', (e) => { 
+            if(e.key === 'Enter') sendMessage(); 
+        });
+    </script>
+</body>
+</html>
